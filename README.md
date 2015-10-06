@@ -16,6 +16,8 @@ If mouse cursor moves out of this triange, then sibling submenu will pop up. Thi
 for quicker transitions when navigating up and down the menu. The experience is similar to
 Amazon's "Shop by Department" dropdown.
 
+In many cases, it may replace a need for hoverIntent.
+
 ![Amazon screenshot](https://raw.github.com/banesto/jQuery-menu-aim/master/amazon.png)
 
 ## Use like so:
