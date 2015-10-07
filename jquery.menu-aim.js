@@ -89,7 +89,7 @@
        * Hook up initial menu events
        */
       if (this.isOnTouch) {
-        this.isOnHover = this.isOnClick = false;
+        this.isOnHover = this.isOnClick = false; // @TODO: probably should remove this line and allow the 'touch' targetEvent to NOT include logic for the 'hover' targetEvent, for more flexibility and maybe more modularity
         this._touchTriggerOn();
       }
 
@@ -136,13 +136,7 @@
       obj = e.data.obj;
       obj._activate(this);
 
-      //console.log(e.type + ' on ' + e.target.innerHTML);
-      console.log('touchytouchy');
-
-      // there is a chance that the triggerEvent may includes 'click', so ensure the click handler isn't fired twice in that situation due to how (at least iOS) browsers map/force a touch event to be a click event via a fallback (this first click) and the actual click event
-      //$(this.el).find(this.options.rowSelector)
-      //  .off('click', { obj: this }, this._clickRow);
-
+      // Many modern browsers currently emulate mouse events, specifically a mouseenter and a click event. If using menuaim on a touch device, setting the triggerEvent to ONLY 'hover' will not work as expected in some browsers (at least iOS), so the next obvious solution is to use both 'hover' AND 'click' for the triggerEvent. The problem with this situation is that the emulated hover/mouseenter event will activate the row, but then the emulated click event will immediately deactivate the row. So, we use preventDefault() to tell the browser NOT to emulate the mouse events AFTER the touch events.
       e.preventDefault();
 
       // bind close event when submenu content is rendered
@@ -197,7 +191,7 @@
     },
 
     _touchRowHandle: function(e) {
-      e.preventDefault();
+      e.preventDefault(); // As with _touchRow, tell the browser to NOT also trigger the emulated mouse events after the touch event(s)
 
       obj = e.data.obj;
       if ($(this).closest('li').hasClass(obj.options.openClassName)) {
@@ -414,8 +408,6 @@
       $(this.el).on('mouseleave', { obj: this}, this._mouseLeaveMenu )
         .find(this.options.rowSelector)
         .on('touchstart', { obj: this}, this._touchRow)
-        //.on('touchstart', { obj: this}, this._touchRow)
-        //.on('click', { obj: this }, this._clickRow)
         .on('mouseenter', { obj: this}, this._mouseEnterRow)
         .on('mouseleave', { obj: this}, this._mouseLeaveRow);
       $(window).on('blur', { obj: this }, this._mouseLeaveMenu);
