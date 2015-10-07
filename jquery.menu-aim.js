@@ -39,7 +39,7 @@
 
   var pluginName  = 'menuAim',
       defaults    = {
-        triggerEvent:       "hover",  // A means of activating submenu - either 'hover' or 'click' or 'both
+        triggerEvent:       "hover",  // A means of activating submenu - either 'hover', 'click', 'hover,click' or 'touch'
         rowSelector:        "> li",   // Selector for identifying which elements in the menu are rows
         handle:             "> a",    // Handle for triggering mouse clicks on menu item
         submenuSelector:    "*",      // You may have some menu rows that aren't submenus and therefore
@@ -81,12 +81,18 @@
       this.lastDelayLoc = null,
       this.timeoutId    = null,
       this.openDelayId  = null,
-      this.isOnClick    = $.inArray(this.options.triggerEvent, ['both', 'click']) > -1,
-      this.isOnHover    = $.inArray(this.options.triggerEvent, ['both', 'hover']) > -1;
+      this.isOnClick    = $.inArray('click', this.options.triggerEvent.split(',')) > -1,
+      this.isOnHover    = $.inArray('hover', this.options.triggerEvent.split(',')) > -1,
+      this.isOnTouch    = $.inArray('touch', this.options.triggerEvent.split(',')) > -1;
 
       /**
        * Hook up initial menu events
        */
+      if (this.isOnTouch) {
+        this.isOnHover = this.isOnClick = false;
+        this._touchTriggerOn();
+      }
+
       if (this.isOnHover) {
         this._hoverTriggerOn();
       }
@@ -124,6 +130,26 @@
 
       obj._possiblyDeactivate(obj.activeRow);
       obj.options.exitMenuCallback(this);
+    },
+
+    _touchRow: function(e) {
+      obj = e.data.obj;
+      obj._activate(this);
+
+      //console.log(e.type + ' on ' + e.target.innerHTML);
+      console.log('touchytouchy');
+
+      // there is a chance that the triggerEvent may includes 'click', so ensure the click handler isn't fired twice in that situation due to how (at least iOS) browsers map/force a touch event to be a click event via a fallback (this first click) and the actual click event
+      //$(this.el).find(this.options.rowSelector)
+      //  .off('click', { obj: this }, this._clickRow);
+
+      e.preventDefault();
+
+      // bind close event when submenu content is rendered
+      $(obj.el)
+        .find(obj.options.rowSelector)
+        .find(obj.options.handle)
+        .on('touchstart', { obj: obj }, obj._touchRowHandle);
     },
 
     /**
@@ -170,6 +196,15 @@
       }
     },
 
+    _touchRowHandle: function(e) {
+      e.preventDefault();
+
+      obj = e.data.obj;
+      if ($(this).closest('li').hasClass(obj.options.openClassName)) {
+        obj._deactivate();
+        e.stopPropagation();
+      }
+    },
     /**
      * Activate a menu row with possible delay
      */
@@ -373,6 +408,18 @@
         obj.options.deactivateCallback(obj.activeRow);
         obj.activeRow = null;
       }
+    },
+
+    _touchTriggerOn: function() {
+      $(this.el).on('mouseleave', { obj: this}, this._mouseLeaveMenu )
+        .find(this.options.rowSelector)
+        .on('touchstart', { obj: this}, this._touchRow)
+        //.on('touchstart', { obj: this}, this._touchRow)
+        //.on('click', { obj: this }, this._clickRow)
+        .on('mouseenter', { obj: this}, this._mouseEnterRow)
+        .on('mouseleave', { obj: this}, this._mouseLeaveRow);
+      $(window).on('blur', { obj: this }, this._mouseLeaveMenu);
+      $(document).on('mousemove', { obj: this }, this._mouseMoveDocument);
     },
 
     _hoverTriggerOn: function() {
